@@ -1,152 +1,334 @@
-# Meshtastic Community Platform (MCP)
+# Meshtastic Community Router (MCR)
 
-> Build, connect, and grow Meshtastic communities—without writing custom infrastructure.
+> Dynamic MQTT routing, community management, and plugin framework for Meshtastic communities.
 
-Meshtastic Community Platform (MCP) is an open-source framework for creating, managing, and interconnecting Meshtastic communities over MQTT. It provides dynamic routing, community discovery, plugin-based automation, and management tools that allow communities to scale beyond a single MQTT topic or broker.
+Meshtastic Community Router (MCR) is an open-source platform that allows Meshtastic communities to grow beyond a single static MQTT topic.
 
-Originally developed for the **Flag & Torch Society (FATS)**, MCP has evolved into a general-purpose platform that any organization, club, emergency communications group, or hobbyist community can deploy.
+Instead of manually maintaining MQTT bridges, routing scripts, or static routing tables, MCR dynamically manages routing between community topics while preserving Meshtastic's encrypted packet format.
 
----
-
-## Vision
-
-Meshtastic has made it incredibly easy to build local mesh networks. MCP extends that idea into the cloud by providing the services needed to build thriving communities around those networks.
-
-Rather than maintaining static MQTT configurations or custom scripts, MCP provides a platform where communities can:
-
-- Discover each other
-- Dynamically register MQTT topics
-- Bridge conversations between communities
-- Automate administrative tasks
-- Extend functionality through plugins
-- Monitor network health through a web dashboard
-- Build custom community experiences without modifying the core platform
-
-The long-term goal is to create a federated ecosystem where Meshtastic communities around the world can discover, collaborate, and grow together.
+Originally developed for the **Flag & Torch Society (FATS)**, MCR is designed to support **any Meshtastic community** through configuration rather than code changes.
 
 ---
 
-# Current Features
+# Features
 
-- MQTT broker integration
-- Dynamic topic routing
-- Multi-topic community bridging
-- Packet deduplication
-- Meshtastic encrypted packet support
+## Current Features
+
+- Dynamic MQTT topic routing
+- Multi-root community routing
+- Packet deduplication and loop prevention
+- SQLite-backed configuration and state
+- Automatic MQTT subscription management
 - Plugin architecture
-- Command framework
-- SQLite-backed configuration
-- Dynamic MQTT subscriptions
-- Community chatbot framework (FATBOT)
+- Chatbot framework
+- Topic registration and confirmation workflow
+- Activity tracking
+- Background scheduler
+- REST API
+- Live web dashboard
+- Docker Compose deployment
+- Database migration framework
+- Encrypted Meshtastic packet support
 
----
+## Planned Features
 
-# Planned Features
-
-## Community Management
-
-- Dynamic topic registration
 - Community discovery
-- Topic confirmation workflow
-- User-maintained routing tables
-- Automatic subscription management
-
-## Plugins
-
-- Registration plugin
-- Statistics plugin
-- Weather plugin
-- APRS integration
+- Router federation
 - Discord bridge
-- Bulletin board
+- APRS integration
+- Weather plugin
 - AI assistant
-- Emergency notification system
-
-## Dashboard
-
-- Community management
-- Live MQTT monitoring
-- Node statistics
-- Plugin management
-- Routing visualization
-- Broker health
-- Network analytics
-
-## Federation
-
-- Community advertisements
-- Trusted community discovery
-- Cross-community routing
-- Signed announcements
-- Distributed community directory
+- Bulletin board
+- WebSocket dashboard
+- Administrative web interface
+- Historical statistics
 
 ---
 
 # Architecture
 
+```text
+                 Meshtastic Nodes
+                        │
+                 MQTT Broker
+                        │
+        ┌────────────────────────────────┐
+        │  Meshtastic Community Router   │
+        ├────────────────────────────────┤
+        │ MQTT Router                    │
+        │ Database                       │
+        │ Scheduler                      │
+        │ Plugin Manager                 │
+        │ REST API                       │
+        │ Live Dashboard                 │
+        └────────────────────────────────┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+      Chatbot      Registration   Future Plugins
 ```
-                    Meshtastic Nodes
-                            │
-                     Meshtastic MQTT
-                            │
-                    ┌────────────────┐
-                    │      MCP       │
-                    ├────────────────┤
-                    │ MQTT Broker    │
-                    │ Router         │
-                    │ Event Bus      │
-                    │ Database       │
-                    │ Plugin Manager │
-                    └────────────────┘
-                            │
-        ┌───────────────────┼────────────────────┐
-        │                   │                    │
-   Chat Plugin      Registration Plugin    Statistics
-        │                   │                    │
-   Weather Plugin      Dashboard API      Discord Plugin
+
+MCR is intentionally modular. Most functionality is implemented through plugins so new features can be added without modifying the routing engine.
+
+---
+
+# Installation
+
+## Requirements
+
+- Docker
+- Docker Compose
+- MQTT Broker
+- Meshtastic MQTT credentials
+- Meshtastic channel PSK
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/bertotuxedo/Meshtastic-Community-Router.git
+
+cd Meshtastic-Community-Router
 ```
 
-The core platform is intentionally minimal. Nearly all functionality is implemented as plugins, allowing communities to customize MCP without modifying the core.
+## Create Configuration Files
+
+Copy the provided examples.
+
+```bash
+cp config/config.example.yaml config/config.yaml
+
+cp secrets/router.env.example secrets/router.env
+```
+
+## Configure `config/config.yaml`
+
+Set your community information.
+
+```yaml
+communities:
+  mycommunity:
+    display_name: My Community
+    channel_name: MYCHANNEL
+    rendezvous_root: msh/US/MYCOMMUNITY
+
+    initial_roots:
+      - msh/US/MYCOMMUNITY
+```
+
+## Configure `secrets/router.env`
+
+Populate the required values.
+
+```text
+MCR_MQTT_HOST=
+MCR_MQTT_PORT=
+MCR_MQTT_USERNAME=
+MCR_MQTT_PASSWORD=
+MCR_FATS_PSK_BASE64=
+```
+
+## Start the Router
+
+```bash
+docker compose up -d
+```
+
+View logs:
+
+```bash
+docker compose logs -f
+```
 
 ---
 
-# Why MCP?
+# Dashboard
 
-Many Meshtastic communities rely on manually maintained MQTT topics, custom scripts, or one-off automation. As communities grow, those approaches become increasingly difficult to manage.
+Once running, the dashboard is available at:
 
-MCP provides a common platform that separates infrastructure from community-specific logic.
+```
+http://YOUR_SERVER:8008
+```
 
-Instead of writing new software for every community, administrators configure MCP and install the plugins they need.
+The dashboard displays:
+
+- Router status
+- Active nodes
+- Active rooms
+- Registered routing roots
+- Packet statistics
+- Scheduler health
+- Plugin health
+- Database schema version
 
 ---
 
-# Project Goals
+# Configuration
 
-- Keep the core lightweight
-- Everything is plugin-driven
-- Configuration over customization
-- Dynamic instead of static
-- Community-first architecture
-- Open ecosystem for third-party plugins
-- Easy deployment with Docker Compose
+## application
+
+General application settings.
+
+| Option | Description |
+|---------|-------------|
+| `log_level` | Logging verbosity |
+
+## mqtt
+
+MQTT broker connection.
+
+| Option | Description |
+|---------|-------------|
+| `host` | MQTT hostname |
+| `port` | MQTT port |
+| `client_id` | MQTT client ID |
+| `keepalive` | Keepalive interval |
+
+## communities
+
+Community configuration.
+
+| Option | Description |
+|---------|-------------|
+| `display_name` | Human-readable community name |
+| `channel_name` | Meshtastic channel name |
+| `rendezvous_root` | Primary MQTT routing root |
+| `initial_roots` | Default routed roots |
+
+## routing
+
+Routing engine configuration.
+
+| Option | Description |
+|---------|-------------|
+| `deduplication_seconds` | Duplicate retention period |
+| `root_reload_seconds` | Root reload interval |
+| `maximum_registered_roots` | Maximum registered roots |
+
+## registration
+
+Registration workflow.
+
+| Option | Description |
+|---------|-------------|
+| `confirmation_expiration_seconds` | Confirmation timeout |
+| `cleanup_interval_seconds` | Cleanup interval |
+| `maximum_roots_per_node` | Maximum registrations per node |
+
+## activity
+
+Controls activity tracking.
+
+| Option | Description |
+|---------|-------------|
+| `active_window_seconds` | Time window for active nodes |
+
+## scheduler
+
+Background scheduler.
+
+| Option | Description |
+|---------|-------------|
+| `poll_interval_seconds` | Scheduler polling interval |
+
+## bot
+
+Community chatbot.
+
+| Option | Description |
+|---------|-------------|
+| `enabled` | Enable or disable bot |
+| `name` | Bot display name |
+| `node_id` | Virtual node ID |
+| `hop_limit` | Reply hop limit |
+
+## api
+
+REST API configuration.
+
+| Option | Description |
+|---------|-------------|
+| `enabled` | Enable API |
+| `host` | Listen address |
+| `port` | API port |
 
 ---
 
-# Project Status
+# Bot Commands
 
-MCP is currently under active development.
+| Command | Description |
+|---------|-------------|
+| `!help` | Show available commands |
+| `!status` | Show router status |
+| `!topics` | List available topics |
+| `!mytopics` | List your registered topics |
+| `!register <mqtt_root>` | Register a new routing topic |
+| `!confirm <code>` | Confirm registration |
+| `!unregister <mqtt_root>` | Remove a registered topic |
 
-The routing engine, plugin framework, command system, and encrypted Meshtastic packet handling are functional. Registration, federation, dashboard, and additional plugins are actively being developed.
+---
 
-Early adopters and contributors are welcome.
+# Project Structure
+
+```text
+src/
+└── mcr/
+    ├── api/
+    ├── bot/
+    ├── broker/
+    ├── commands/
+    ├── database/
+    ├── events/
+    ├── migrations/
+    ├── plugins/
+    ├── scheduler/
+    ├── services/
+    ├── web/
+    └── main.py
+
+config/
+data/
+secrets/
+```
+
+---
+
+# Roadmap
+
+## Version 1.0
+
+- ✅ Dynamic MQTT routing
+- ✅ Registration workflow
+- ✅ REST API
+- ✅ Live dashboard
+- ✅ Plugin architecture
+- ✅ Activity tracking
+- ✅ FATBOT
+
+## Version 1.1
+
+- Community discovery
+- Generic community support
+- Improved administration
+
+## Version 1.2
+
+- WebSocket dashboard
+- Historical statistics
+- Enhanced analytics
+
+## Version 2.0
+
+- Router federation
+- Distributed routing
+- Plugin marketplace
 
 ---
 
 # Contributing
 
-Contributions, feature requests, bug reports, and plugin ideas are encouraged.
+Contributions are welcome.
 
-If you're interested in helping build the future of Meshtastic community infrastructure, we'd love to have your help.
+If you have ideas, bug reports, feature requests, or would like to build plugins, please open an Issue or Pull Request.
 
 ---
 
