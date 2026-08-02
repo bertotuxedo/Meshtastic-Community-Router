@@ -1,12 +1,12 @@
 # Meshtastic Community Router (MCR)
 
-> Dynamic MQTT routing, community management, and plugin framework for Meshtastic communities.
+> Dynamic MQTT routing, encrypted packet forwarding, and community management for Meshtastic.
 
-Meshtastic Community Router (MCR) is an open-source platform that allows Meshtastic communities to grow beyond a single static MQTT topic.
+Meshtastic Community Router (MCR) is an open-source platform that allows Meshtastic communities to grow beyond a single MQTT topic.
 
-Instead of manually maintaining MQTT bridges, routing scripts, or static routing tables, MCR dynamically manages routing between community topics while preserving Meshtastic's encrypted packet format.
+Instead of manually maintaining MQTT bridges or static routing scripts, MCR dynamically routes encrypted Meshtastic packets between community topics while preventing routing loops and duplicate packets.
 
-Originally developed for the **Flag & Torch Society (FATS)**, MCR is designed to support **any Meshtastic community** through configuration rather than code changes.
+Originally developed for the **Flag & Torch Society (FATS)**, the router is designed to support **any Meshtastic community** through configuration rather than code changes.
 
 ---
 
@@ -14,34 +14,49 @@ Originally developed for the **Flag & Torch Society (FATS)**, MCR is designed to
 
 ## Current Features
 
-- Dynamic MQTT topic routing
-- Multi-root community routing
-- Packet deduplication and loop prevention
-- SQLite-backed configuration and state
-- Automatic MQTT subscription management
+- Dynamic MQTT routing
+- Multi-root community support
+- Encrypted packet forwarding
+- Duplicate packet detection
+- Automatic MQTT subscriptions
+- SQLite database
+- Database migrations
 - Plugin architecture
-- Chatbot framework
-- Topic registration and confirmation workflow
-- Activity tracking
-- Background scheduler
 - REST API
-- Live web dashboard
-- Docker Compose deployment
-- Database migration framework
-- Encrypted Meshtastic packet support
+- Live Dashboard
+- Activity monitoring
+- Background scheduler
+- Topic registration workflow
+- Community chatbot
+- Docker deployment
 
-## Planned Features
+---
 
-- Community discovery
-- Router federation
-- Discord bridge
-- APRS integration
-- Weather plugin
-- AI assistant
-- Bulletin board
-- WebSocket dashboard
-- Administrative web interface
-- Historical statistics
+# How It Works
+
+Every packet entering the router follows the same workflow.
+
+```text
+Meshtastic Node
+        │
+        ▼
+ MQTT Broker
+        │
+        ▼
+Meshtastic Community Router
+        │
+        ├── Validate Packet
+        ├── Detect Duplicates
+        ├── Determine Community
+        ├── Route to Registered Roots
+        ├── Update Statistics
+        ├── Notify Plugins
+        └── Process Bot Commands
+```
+
+The router never decrypts or modifies Meshtastic payloads.
+
+Instead, it intelligently routes encrypted packets between registered MQTT topics while preserving the original packet.
 
 ---
 
@@ -68,19 +83,22 @@ Originally developed for the **Flag & Torch Society (FATS)**, MCR is designed to
       Chatbot      Registration   Future Plugins
 ```
 
-MCR is intentionally modular. Most functionality is implemented through plugins so new features can be added without modifying the routing engine.
-
 ---
 
-# Installation
+# Quick Start
 
 ## Requirements
 
+Before starting, you'll need:
+
 - Docker
 - Docker Compose
+- Git
 - MQTT Broker
 - Meshtastic MQTT credentials
 - Meshtastic channel PSK
+
+---
 
 ## Clone the Repository
 
@@ -89,6 +107,8 @@ git clone https://github.com/bertotuxedo/Meshtastic-Community-Router.git
 
 cd Meshtastic-Community-Router
 ```
+
+---
 
 ## Create Configuration Files
 
@@ -100,37 +120,92 @@ cp config/config.example.yaml config/config.yaml
 cp secrets/router.env.example secrets/router.env
 ```
 
-## Configure `config/config.yaml`
+---
 
-Set your community information.
+## Configure the Router
+
+Open:
+
+```text
+config/config.yaml
+```
+
+Example:
 
 ```yaml
 communities:
   mycommunity:
     display_name: My Community
-    channel_name: MYCHANNEL
+    channel_name: MYCOMMUNITY
     rendezvous_root: msh/US/MYCOMMUNITY
 
     initial_roots:
       - msh/US/MYCOMMUNITY
 ```
 
-## Configure `secrets/router.env`
+You can add additional static routing roots under `initial_roots`.
 
-Populate the required values.
+---
+
+## Configure MQTT Credentials
+
+Open:
 
 ```text
-MCR_MQTT_HOST=
-MCR_MQTT_PORT=
-MCR_MQTT_USERNAME=
-MCR_MQTT_PASSWORD=
-MCR_FATS_PSK_BASE64=
+secrets/router.env
 ```
 
-## Start the Router
+Fill in your MQTT information.
+
+```text
+MCR_MQTT_HOST=mqtt.example.com
+MCR_MQTT_PORT=1883
+MCR_MQTT_USERNAME=myusername
+MCR_MQTT_PASSWORD=mypassword
+
+MCR_FATS_PSK_BASE64=YOUR_BASE64_CHANNEL_PSK
+```
+
+The PSK must match the Meshtastic channel being routed.
+
+---
+
+## Generate a Bot Node ID
+
+Every router should identify itself as its own virtual Meshtastic node.
+
+Generate a random Node ID:
 
 ```bash
-docker compose up -d
+printf '!%08x\n' "$((0x$(openssl rand -hex 4)))"
+```
+
+Example:
+
+```text
+!40e95c88
+```
+
+Place that value into:
+
+```yaml
+bot:
+  node_id: "!40e95c88"
+```
+
+You can also customize the bot name.
+
+```yaml
+bot:
+  name: FATBOT
+```
+
+---
+
+## Build and Start
+
+```bash
+docker compose up -d --build
 ```
 
 View logs:
@@ -141,129 +216,65 @@ docker compose logs -f
 
 ---
 
-# Dashboard
+## Verify the Router
 
-Once running, the dashboard is available at:
+Verify the REST API.
+
+```bash
+curl http://localhost:8008/api/status | python3 -m json.tool
+```
+
+Example response:
+
+```json
+{
+    "status": "running",
+    "routing": {
+        "enabled": true
+    },
+    "bot": {
+        "enabled": true,
+        "name": "FATBOT"
+    }
+}
+```
+
+---
+
+## Open the Dashboard
+
+Browse to
 
 ```
-http://YOUR_SERVER:8008
+http://YOUR_SERVER_IP:8008
 ```
 
 The dashboard displays:
 
-- Router status
-- Active nodes
-- Active rooms
-- Registered routing roots
-- Packet statistics
-- Scheduler health
-- Plugin health
-- Database schema version
-
----
-
-# Configuration
-
-## application
-
-General application settings.
-
-| Option | Description |
-|---------|-------------|
-| `log_level` | Logging verbosity |
-
-## mqtt
-
-MQTT broker connection.
-
-| Option | Description |
-|---------|-------------|
-| `host` | MQTT hostname |
-| `port` | MQTT port |
-| `client_id` | MQTT client ID |
-| `keepalive` | Keepalive interval |
-
-## communities
-
-Community configuration.
-
-| Option | Description |
-|---------|-------------|
-| `display_name` | Human-readable community name |
-| `channel_name` | Meshtastic channel name |
-| `rendezvous_root` | Primary MQTT routing root |
-| `initial_roots` | Default routed roots |
-
-## routing
-
-Routing engine configuration.
-
-| Option | Description |
-|---------|-------------|
-| `deduplication_seconds` | Duplicate retention period |
-| `root_reload_seconds` | Root reload interval |
-| `maximum_registered_roots` | Maximum registered roots |
-
-## registration
-
-Registration workflow.
-
-| Option | Description |
-|---------|-------------|
-| `confirmation_expiration_seconds` | Confirmation timeout |
-| `cleanup_interval_seconds` | Cleanup interval |
-| `maximum_roots_per_node` | Maximum registrations per node |
-
-## activity
-
-Controls activity tracking.
-
-| Option | Description |
-|---------|-------------|
-| `active_window_seconds` | Time window for active nodes |
-
-## scheduler
-
-Background scheduler.
-
-| Option | Description |
-|---------|-------------|
-| `poll_interval_seconds` | Scheduler polling interval |
-
-## bot
-
-Community chatbot.
-
-| Option | Description |
-|---------|-------------|
-| `enabled` | Enable or disable bot |
-| `name` | Bot display name |
-| `node_id` | Virtual node ID |
-| `hop_limit` | Reply hop limit |
-
-## api
-
-REST API configuration.
-
-| Option | Description |
-|---------|-------------|
-| `enabled` | Enable API |
-| `host` | Listen address |
-| `port` | API port |
+- Router Status
+- Active Nodes
+- Active Rooms
+- Registered Routing Roots
+- Packet Counters
+- Loaded Plugins
+- Scheduler Status
+- Database Version
 
 ---
 
 # Bot Commands
 
+The chatbot only responds on the configured rendezvous topic.
+
 | Command | Description |
-|---------|-------------|
-| `!help` | Show available commands |
-| `!status` | Show router status |
-| `!topics` | List available topics |
+|----------|-------------|
+| `!help` | Display available commands |
+| `!status` | Display router status |
+| `!topics` | Show available routing topics |
 | `!mytopics` | List your registered topics |
-| `!register <mqtt_root>` | Register a new routing topic |
-| `!confirm <code>` | Confirm registration |
-| `!unregister <mqtt_root>` | Remove a registered topic |
+| `!register <mqtt_root>` | Register a routing topic |
+| `!confirm <code>` | Confirm a pending registration |
+| `!unregister <mqtt_root>` | Remove a routing topic |
 
 ---
 
@@ -276,6 +287,7 @@ src/
     ├── bot/
     ├── broker/
     ├── commands/
+    ├── crypto/
     ├── database/
     ├── events/
     ├── migrations/
@@ -292,34 +304,84 @@ secrets/
 
 ---
 
+# API
+
+The router exposes a read-only REST API.
+
+## Health
+
+```
+GET /health
+```
+
+## Router Status
+
+```
+GET /api/status
+```
+
+Returns:
+
+- Router status
+- Active nodes
+- Active rooms
+- Routing roots
+- Plugin health
+- Scheduler health
+- Database version
+- Packet counters
+
+---
+
+# Updating
+
+Pull the latest version.
+
+```bash
+git pull
+```
+
+Rebuild the container.
+
+```bash
+docker compose up -d --build
+```
+
+Database migrations are applied automatically during startup.
+
+---
+
 # Roadmap
 
 ## Version 1.0
 
-- ✅ Dynamic MQTT routing
+- ✅ MQTT Router
+- ✅ Multi-root routing
+- ✅ Duplicate detection
 - ✅ Registration workflow
 - ✅ REST API
-- ✅ Live dashboard
-- ✅ Plugin architecture
-- ✅ Activity tracking
+- ✅ Dashboard
+- ✅ Plugin system
+- ✅ Scheduler
+- ✅ Activity monitoring
 - ✅ FATBOT
 
 ## Version 1.1
 
-- Community discovery
 - Generic community support
-- Improved administration
+- Community discovery
+- Administrative improvements
 
 ## Version 1.2
 
 - WebSocket dashboard
-- Historical statistics
-- Enhanced analytics
+- Historical analytics
+- Live packet visualization
 
 ## Version 2.0
 
 - Router federation
-- Distributed routing
+- Distributed community routing
 - Plugin marketplace
 
 ---
@@ -328,7 +390,7 @@ secrets/
 
 Contributions are welcome.
 
-If you have ideas, bug reports, feature requests, or would like to build plugins, please open an Issue or Pull Request.
+If you'd like to report a bug, suggest a feature, or contribute code, please open an Issue or Pull Request.
 
 ---
 
