@@ -1,0 +1,1368 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>Meshtastic Community Router</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            --background: #091018;
+            --panel: #121c26;
+            --panel-secondary: #172532;
+            --border: #293b4b;
+            --text: #edf4f8;
+            --muted: #92a8b7;
+            --good: #46d69a;
+            --warning: #f0b429;
+            --bad: #ff6b6b;
+            --accent: #4ba3ff;
+            --accent-soft: rgba(75, 163, 255, 0.13);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            background:
+                radial-gradient(
+                    circle at top right,
+                    #123149 0,
+                    transparent 32%
+                ),
+                radial-gradient(
+                    circle at bottom left,
+                    #13233a 0,
+                    transparent 28%
+                ),
+                var(--background);
+
+            color: var(--text);
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+
+            border-bottom: 1px solid var(--border);
+
+            background:
+                rgba(9, 16, 24, 0.9);
+
+            backdrop-filter: blur(14px);
+        }
+
+        .header-inner,
+        main {
+            width: min(
+                1280px,
+                calc(100% - 32px)
+            );
+
+            margin: 0 auto;
+        }
+
+        .header-inner {
+            min-height: 82px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        h1 {
+            margin: 0;
+
+            font-size:
+                clamp(
+                    1.3rem,
+                    3vw,
+                    1.9rem
+                );
+        }
+
+        .subtitle {
+            margin-top: 5px;
+
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        main {
+            padding: 28px 0 52px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 8px 12px;
+
+            border: 1px solid var(--border);
+            border-radius: 999px;
+
+            background: var(--panel-secondary);
+
+            font-size: 0.83rem;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+
+            border-radius: 50%;
+
+            background: var(--muted);
+        }
+
+        .good .status-dot {
+            background: var(--good);
+            box-shadow:
+                0 0 12px var(--good);
+        }
+
+        .warning .status-dot {
+            background: var(--warning);
+        }
+
+        .bad .status-dot {
+            background: var(--bad);
+        }
+
+        .metric-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(170px, 1fr)
+                );
+
+            gap: 15px;
+
+            margin-bottom: 24px;
+        }
+
+        .content-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(340px, 1fr)
+                );
+
+            gap: 18px;
+        }
+
+        .wide {
+            grid-column: 1 / -1;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+
+            padding: 20px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(23, 37, 50, 0.96),
+                    rgba(18, 28, 38, 0.96)
+                );
+
+            box-shadow:
+                0 16px 38px
+                rgba(0, 0, 0, 0.2);
+        }
+
+        .metric-card {
+            min-height: 120px;
+        }
+
+        .metric-label {
+            color: var(--muted);
+
+            font-size: 0.78rem;
+            font-weight: 700;
+
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+
+        .metric-value {
+            margin-top: 13px;
+
+            font-size: 1.8rem;
+            font-weight: 760;
+
+            overflow-wrap: anywhere;
+        }
+
+        .metric-detail {
+            margin-top: 7px;
+
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+
+            margin-bottom: 16px;
+        }
+
+        .card h2 {
+            margin: 0;
+
+            font-size: 1.05rem;
+        }
+
+        .count-pill {
+            min-width: 30px;
+
+            padding: 4px 8px;
+
+            border: 1px solid var(--border);
+            border-radius: 999px;
+
+            background: var(--accent-soft);
+            color: #bfe0ff;
+
+            text-align: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .key-value {
+            display: grid;
+
+            grid-template-columns:
+                minmax(130px, 1fr)
+                minmax(120px, 2fr);
+
+            gap: 9px 18px;
+
+            align-items: baseline;
+        }
+
+        .key {
+            color: var(--muted);
+        }
+
+        .value {
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .list-item {
+            padding: 13px 14px;
+
+            border: 1px solid var(--border);
+            border-radius: 11px;
+
+            background:
+                rgba(8, 14, 21, 0.55);
+        }
+
+        .list-title {
+            font-weight: 720;
+            overflow-wrap: anywhere;
+        }
+
+        .list-meta {
+            margin-top: 5px;
+
+            color: var(--muted);
+            font-size: 0.84rem;
+
+            line-height: 1.45;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            font-size: 0.88rem;
+        }
+
+        th,
+        td {
+            padding: 11px 12px;
+
+            border-bottom: 1px solid var(--border);
+
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+
+            font-size: 0.76rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        tbody tr:hover {
+            background:
+                rgba(75, 163, 255, 0.05);
+        }
+
+        code {
+            color: #bfe0ff;
+
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Consolas,
+                monospace;
+        }
+
+        .empty {
+            padding: 16px 0;
+
+            color: var(--muted);
+        }
+
+        .error-panel {
+            display: none;
+
+            margin-bottom: 20px;
+
+            border-color:
+                rgba(255, 107, 107, 0.55);
+
+            color: #ffd4d4;
+        }
+
+        .footer-note {
+            margin-top: 30px;
+
+            color: var(--muted);
+
+            text-align: center;
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 680px) {
+            .header-inner {
+                padding: 17px 0;
+
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .key-value {
+                grid-template-columns: 1fr;
+            }
+
+            .value {
+                margin-bottom: 8px;
+                text-align: left;
+            }
+
+            th,
+            td {
+                padding: 9px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <div class="header-inner">
+        <div>
+            <h1>Meshtastic Community Router</h1>
+
+            <div class="subtitle">
+                Live routing, node activity, rooms,
+                plugins, and system health
+            </div>
+        </div>
+
+        <div
+            id="connection-status"
+            class="status-badge warning"
+        >
+            <span class="status-dot"></span>
+            <span>Connecting</span>
+        </div>
+    </div>
+</header>
+
+<main>
+    <section
+        id="error-panel"
+        class="card error-panel"
+    ></section>
+
+    <section class="metric-grid">
+        <article class="card metric-card">
+            <div class="metric-label">
+                Platform
+            </div>
+
+            <div
+                id="platform-status"
+                class="metric-value"
+            >
+                Loading
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Active Hosts
+            </div>
+
+            <div
+                id="active-hosts"
+                class="metric-value"
+            >
+                —
+            </div>
+
+            <div
+                id="known-hosts-detail"
+                class="metric-detail"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Active Rooms
+            </div>
+
+            <div
+                id="active-rooms"
+                class="metric-value"
+            >
+                —
+            </div>
+
+            <div
+                id="known-rooms-detail"
+                class="metric-detail"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Active Roots
+            </div>
+
+            <div
+                id="root-count"
+                class="metric-value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Packets Accepted
+            </div>
+
+            <div
+                id="packets-accepted"
+                class="metric-value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Packets Routed
+            </div>
+
+            <div
+                id="packets-routed"
+                class="metric-value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Duplicates Blocked
+            </div>
+
+            <div
+                id="duplicates-blocked"
+                class="metric-value"
+            >
+                —
+            </div>
+        </article>
+
+        <article class="card metric-card">
+            <div class="metric-label">
+                Uptime
+            </div>
+
+            <div
+                id="uptime"
+                class="metric-value"
+            >
+                —
+            </div>
+        </article>
+    </section>
+
+    <section class="content-grid">
+        <article class="card">
+            <div class="card-header">
+                <h2>Routing</h2>
+            </div>
+
+            <div
+                id="routing-details"
+                class="key-value"
+            ></div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2>FATBOT</h2>
+            </div>
+
+            <div
+                id="bot-details"
+                class="key-value"
+            ></div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2>Active MQTT Roots</h2>
+
+                <span
+                    id="roots-count-pill"
+                    class="count-pill"
+                >
+                    0
+                </span>
+            </div>
+
+            <div
+                id="roots-list"
+                class="list"
+            ></div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2>Plugins</h2>
+
+                <span
+                    id="plugins-count-pill"
+                    class="count-pill"
+                >
+                    0
+                </span>
+            </div>
+
+            <div
+                id="plugins-list"
+                class="list"
+            ></div>
+        </article>
+
+        <article class="card wide">
+            <div class="card-header">
+                <h2>Active Hosts</h2>
+
+                <span
+                    id="hosts-count-pill"
+                    class="count-pill"
+                >
+                    0
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Node</th>
+                        <th>Last Root</th>
+                        <th>Channel</th>
+                        <th>Packets</th>
+                        <th>Last Seen</th>
+                    </tr>
+                    </thead>
+
+                    <tbody
+                        id="hosts-table-body"
+                    ></tbody>
+                </table>
+
+                <div
+                    id="hosts-empty"
+                    class="empty"
+                    style="display: none"
+                >
+                    No active nodes observed.
+                </div>
+            </div>
+        </article>
+
+        <article class="card wide">
+            <div class="card-header">
+                <h2>Active Rooms</h2>
+
+                <span
+                    id="rooms-count-pill"
+                    class="count-pill"
+                >
+                    0
+                </span>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>MQTT Root</th>
+                        <th>Channel</th>
+                        <th>Received</th>
+                        <th>Routed</th>
+                        <th>Last Seen</th>
+                    </tr>
+                    </thead>
+
+                    <tbody
+                        id="rooms-table-body"
+                    ></tbody>
+                </table>
+
+                <div
+                    id="rooms-empty"
+                    class="empty"
+                    style="display: none"
+                >
+                    No active rooms observed.
+                </div>
+            </div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2>Scheduler</h2>
+            </div>
+
+            <div
+                id="scheduler-summary"
+                class="key-value"
+            ></div>
+
+            <div
+                id="scheduler-jobs"
+                class="list"
+                style="margin-top: 16px"
+            ></div>
+        </article>
+
+        <article class="card">
+            <div class="card-header">
+                <h2>Database</h2>
+            </div>
+
+            <div
+                id="database-details"
+                class="key-value"
+            ></div>
+        </article>
+    </section>
+
+    <div class="footer-note">
+        Active means observed within
+        <span id="active-window">—</span>.
+
+        Dashboard refreshes every 10 seconds.
+
+        Last update:
+        <span id="last-update">never</span>
+    </div>
+</main>
+
+<script>
+    const refreshIntervalMs = 10000;
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    function formatNumber(value) {
+        return new Intl.NumberFormat().format(
+            Number(value) || 0
+        );
+    }
+
+    function formatDuration(totalSeconds) {
+        const seconds = Math.max(
+            0,
+            Number(totalSeconds) || 0
+        );
+
+        const days = Math.floor(
+            seconds / 86400
+        );
+
+        const hours = Math.floor(
+            (seconds % 86400) / 3600
+        );
+
+        const minutes = Math.floor(
+            (seconds % 3600) / 60
+        );
+
+        const remainingSeconds = Math.floor(
+            seconds % 60
+        );
+
+        const parts = [];
+
+        if (days) {
+            parts.push(`${days}d`);
+        }
+
+        if (hours || days) {
+            parts.push(`${hours}h`);
+        }
+
+        if (minutes || hours || days) {
+            parts.push(`${minutes}m`);
+        }
+
+        parts.push(`${remainingSeconds}s`);
+
+        return parts.join(" ");
+    }
+
+    function formatTimestamp(unixSeconds) {
+        const value = Number(unixSeconds);
+
+        if (!value) {
+            return "Unknown";
+        }
+
+        return new Date(
+            value * 1000
+        ).toLocaleString();
+    }
+
+    function formatRelativeTime(unixSeconds) {
+        const value = Number(unixSeconds);
+
+        if (!value) {
+            return "Unknown";
+        }
+
+        const difference = Math.max(
+            0,
+            Math.floor(
+                Date.now() / 1000 - value
+            )
+        );
+
+        if (difference < 60) {
+            return `${difference}s ago`;
+        }
+
+        if (difference < 3600) {
+            return `${Math.floor(
+                difference / 60
+            )}m ago`;
+        }
+
+        if (difference < 86400) {
+            return `${Math.floor(
+                difference / 3600
+            )}h ago`;
+        }
+
+        return `${Math.floor(
+            difference / 86400
+        )}d ago`;
+    }
+
+    function boolText(value) {
+        return value
+            ? "Enabled"
+            : "Disabled";
+    }
+
+    function setConnectionStatus(
+        state,
+        label
+    ) {
+        const element = document.getElementById(
+            "connection-status"
+        );
+
+        element.className =
+            `status-badge ${state}`;
+
+        element.innerHTML = `
+            <span class="status-dot"></span>
+            <span>${escapeHtml(label)}</span>
+        `;
+    }
+
+    function renderKeyValues(
+        elementId,
+        values
+    ) {
+        const element = document.getElementById(
+            elementId
+        );
+
+        element.innerHTML = Object.entries(values)
+            .map(([key, value]) => `
+                <div class="key">
+                    ${escapeHtml(key)}
+                </div>
+
+                <div class="value">
+                    ${escapeHtml(value)}
+                </div>
+            `)
+            .join("");
+    }
+
+    function renderRoots(roots) {
+        const list = document.getElementById(
+            "roots-list"
+        );
+
+        document.getElementById(
+            "roots-count-pill"
+        ).textContent = roots.length;
+
+        if (!roots.length) {
+            list.innerHTML =
+                '<div class="empty">No active roots.</div>';
+
+            return;
+        }
+
+        list.innerHTML = roots
+            .map(root => `
+                <div class="list-item">
+                    <div class="list-title">
+                        ${escapeHtml(root)}
+                    </div>
+
+                    <div class="list-meta">
+                        Active routing root
+                    </div>
+                </div>
+            `)
+            .join("");
+    }
+
+    function renderPlugins(plugins) {
+        const list = document.getElementById(
+            "plugins-list"
+        );
+
+        document.getElementById(
+            "plugins-count-pill"
+        ).textContent = plugins.length;
+
+        if (!plugins.length) {
+            list.innerHTML =
+                '<div class="empty">No plugins loaded.</div>';
+
+            return;
+        }
+
+        list.innerHTML = plugins
+            .map(plugin => {
+                const status = plugin.healthy
+                    ? "Healthy"
+                    : "Unhealthy";
+
+                const commands = Array.isArray(
+                    plugin.commands
+                )
+                    ? plugin.commands.join(", ")
+                    : "No command metadata";
+
+                return `
+                    <div class="list-item">
+                        <div class="list-title">
+                            ${escapeHtml(plugin.name)}
+                            ·
+                            ${escapeHtml(plugin.version)}
+                        </div>
+
+                        <div class="list-meta">
+                            ${escapeHtml(status)}
+                            ·
+                            ${escapeHtml(commands)}
+                        </div>
+                    </div>
+                `;
+            })
+            .join("");
+    }
+
+    function renderHosts(nodes) {
+        const body = document.getElementById(
+            "hosts-table-body"
+        );
+
+        const empty = document.getElementById(
+            "hosts-empty"
+        );
+
+        document.getElementById(
+            "hosts-count-pill"
+        ).textContent = nodes.length;
+
+        if (!nodes.length) {
+            body.innerHTML = "";
+            empty.style.display = "block";
+            return;
+        }
+
+        empty.style.display = "none";
+
+        body.innerHTML = nodes
+            .map(node => `
+                <tr>
+                    <td>
+                        <code>
+                            ${escapeHtml(node.node_id)}
+                        </code>
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            node.last_root
+                            ?? "Unknown"
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            node.last_channel
+                            ?? "Unknown"
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            node.packets_received
+                        )}
+                    </td>
+
+                    <td
+                        title="${escapeHtml(
+                            formatTimestamp(
+                                node.last_seen
+                            )
+                        )}"
+                    >
+                        ${escapeHtml(
+                            formatRelativeTime(
+                                node.last_seen
+                            )
+                        )}
+                    </td>
+                </tr>
+            `)
+            .join("");
+    }
+
+    function renderRooms(rooms) {
+        const body = document.getElementById(
+            "rooms-table-body"
+        );
+
+        const empty = document.getElementById(
+            "rooms-empty"
+        );
+
+        document.getElementById(
+            "rooms-count-pill"
+        ).textContent = rooms.length;
+
+        if (!rooms.length) {
+            body.innerHTML = "";
+            empty.style.display = "block";
+            return;
+        }
+
+        empty.style.display = "none";
+
+        body.innerHTML = rooms
+            .map(room => `
+                <tr>
+                    <td>
+                        <code>
+                            ${escapeHtml(
+                                room.mqtt_root
+                            )}
+                        </code>
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            room.channel_name
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            room.packets_received
+                        )}
+                    </td>
+
+                    <td>
+                        ${formatNumber(
+                            room.packets_routed
+                        )}
+                    </td>
+
+                    <td
+                        title="${escapeHtml(
+                            formatTimestamp(
+                                room.last_seen
+                            )
+                        )}"
+                    >
+                        ${escapeHtml(
+                            formatRelativeTime(
+                                room.last_seen
+                            )
+                        )}
+                    </td>
+                </tr>
+            `)
+            .join("");
+    }
+
+    function renderScheduler(scheduler) {
+        const jobs = scheduler.jobs || {};
+
+        renderKeyValues(
+            "scheduler-summary",
+            {
+                "Scheduler": boolText(
+                    scheduler.running
+                ),
+                "Jobs": scheduler.job_count ?? 0
+            }
+        );
+
+        const list = document.getElementById(
+            "scheduler-jobs"
+        );
+
+        const entries = Object.entries(jobs);
+
+        if (!entries.length) {
+            list.innerHTML =
+                '<div class="empty">No jobs registered.</div>';
+
+            return;
+        }
+
+        list.innerHTML = entries
+            .map(([name, job]) => `
+                <div class="list-item">
+                    <div class="list-title">
+                        ${escapeHtml(name)}
+                    </div>
+
+                    <div class="list-meta">
+                        Every
+                        ${escapeHtml(
+                            job.interval_seconds
+                        )}s
+                        · Runs
+                        ${escapeHtml(
+                            job.executions
+                        )}
+                        · Failures
+                        ${escapeHtml(
+                            job.failures
+                        )}
+                        ·
+                        ${
+                            job.running
+                                ? "Running now"
+                                : "Idle"
+                        }
+                    </div>
+                </div>
+            `)
+            .join("");
+    }
+
+    function renderStatus(data) {
+        const activity = data.activity || {};
+
+        document.getElementById(
+            "platform-status"
+        ).textContent =
+            data.status === "running"
+                ? "Online"
+                : String(data.status || "Unknown");
+
+        document.getElementById(
+            "active-hosts"
+        ).textContent = formatNumber(
+            activity.active_hosts
+        );
+
+        document.getElementById(
+            "known-hosts-detail"
+        ).textContent =
+            `${formatNumber(
+                activity.known_hosts
+            )} known total`;
+
+        document.getElementById(
+            "active-rooms"
+        ).textContent = formatNumber(
+            activity.active_rooms
+        );
+
+        document.getElementById(
+            "known-rooms-detail"
+        ).textContent =
+            `${formatNumber(
+                activity.known_rooms
+            )} known total`;
+
+        document.getElementById(
+            "root-count"
+        ).textContent = formatNumber(
+            data.root_count
+        );
+
+        document.getElementById(
+            "packets-accepted"
+        ).textContent = formatNumber(
+            activity.packets_accepted
+        );
+
+        document.getElementById(
+            "packets-routed"
+        ).textContent = formatNumber(
+            activity.packets_routed
+        );
+
+        document.getElementById(
+            "duplicates-blocked"
+        ).textContent = formatNumber(
+            activity.duplicates_blocked
+        );
+
+        document.getElementById(
+            "uptime"
+        ).textContent = formatDuration(
+            data.uptime_seconds
+        );
+
+        document.getElementById(
+            "active-window"
+        ).textContent = formatDuration(
+            activity.active_window_seconds
+        );
+
+        renderKeyValues(
+            "routing-details",
+            {
+                "Enabled": boolText(
+                    data.routing?.enabled
+                ),
+                "Community": (
+                    data.routing?.community_key
+                    ?? "Unknown"
+                ),
+                "Channel": (
+                    data.routing?.channel_name
+                    ?? "Unknown"
+                ),
+                "Community ID": (
+                    data.routing?.community_id
+                    ?? "Unknown"
+                )
+            }
+        );
+
+        renderKeyValues(
+            "bot-details",
+            {
+                "Name": (
+                    data.bot?.name
+                    ?? "Unknown"
+                ),
+                "Enabled": boolText(
+                    data.bot?.enabled
+                ),
+                "Node ID": (
+                    data.bot?.node_id
+                    ?? "Unknown"
+                )
+            }
+        );
+
+        renderKeyValues(
+            "database-details",
+            {
+                "Schema Version": (
+                    data.database?.schema_version
+                    ?? "Unknown"
+                ),
+                "Database Path": (
+                    data.database?.path
+                    ?? "Unknown"
+                )
+            }
+        );
+
+        renderRoots(
+            data.roots || []
+        );
+
+        renderPlugins(
+            data.plugins || []
+        );
+
+        renderHosts(
+            data.active_nodes || []
+        );
+
+        renderRooms(
+            data.active_rooms || []
+        );
+
+        renderScheduler(
+            data.scheduler || {}
+        );
+
+        document.getElementById(
+            "last-update"
+        ).textContent =
+            new Date().toLocaleString();
+
+        document.getElementById(
+            "error-panel"
+        ).style.display = "none";
+
+        setConnectionStatus(
+            "good",
+            "Connected"
+        );
+    }
+
+    async function refreshStatus() {
+        try {
+            const response = await fetch(
+                "/api/status",
+                {
+                    cache: "no-store"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status}`
+                );
+            }
+
+            const data = await response.json();
+
+            renderStatus(data);
+        } catch (error) {
+            const panel = document.getElementById(
+                "error-panel"
+            );
+
+            panel.style.display = "block";
+
+            panel.textContent =
+                `Unable to load router status: ${error}`;
+
+            setConnectionStatus(
+                "bad",
+                "Disconnected"
+            );
+        }
+    }
+
+    refreshStatus();
+
+    window.setInterval(
+        refreshStatus,
+        refreshIntervalMs
+    );
+</script>
+</body>
+</html>

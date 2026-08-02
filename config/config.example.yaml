@@ -1,0 +1,45 @@
+application:
+  log_level: INFO
+
+mqtt:
+  host: mqtt.example.com
+  port: 1883
+  client_id: mcr-community-router
+  keepalive: 60
+
+communities:
+  fats:
+    display_name: Flag & Torch Society #CHANGE ME
+    channel_name: FATS #CHANGE ME
+    rendezvous_root: msh/US/FATS #CHANGE ME
+
+    initial_roots:
+      - msh/US/FATS #CHANGE ME
+      - msh/US/NY/NNY #CHANGE ME
+
+routing:
+  deduplication_seconds: 1800
+  root_reload_seconds: 10
+  maximum_registered_roots: 100
+
+bot:
+  enabled: true
+  name: FATBOT #CHANGE ME
+  node_id: "!12345678" #CHANGE ME Create Node ID using "printf '!%08x\n' $((0x$(openssl rand -hex 4)))"
+  hop_limit: 3
+
+registration:
+  confirmation_expiration_seconds: 300
+  cleanup_interval_seconds: 60
+  maximum_roots_per_node: 3
+
+scheduler:
+  poll_interval_seconds: 1
+
+activity:
+  active_window_seconds: 900
+
+api:
+  enabled: true
+  host: 0.0.0.0
+  port: 8008

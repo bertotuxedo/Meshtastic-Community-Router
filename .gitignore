@@ -1,0 +1,66 @@
+# Secrets and private environment files
+.env
+.env.*
+!.env.example
+
+router.env
+**/router.env
+**/*.env
+!**/*.env.example
+
+secrets/*
+!secrets/*.example
+!secrets/README.md
+
+# Runtime databases
+data/*
+!data/.gitkeep
+
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Database backups
+*.before-migrations
+*.backup
+*.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Logs and runtime files
+*.log
+logs/
+run/
+tmp/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git credentials and keys
+*.pem
+*.key
+*.crt
+id_rsa
+id_ed25519
+
+# Local customized configuration
+config/config.yaml
+!config/config.example.yaml

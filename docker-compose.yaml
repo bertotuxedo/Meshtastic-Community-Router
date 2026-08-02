@@ -1,0 +1,45 @@
+services:
+  mcr:
+    image: python:3.13-slim
+    container_name: meshtastic-community-router
+    restart: unless-stopped
+    ports:
+      - "8008:8080"
+
+    working_dir: /app
+
+    env_file:
+      - ./secrets/router.env
+
+    volumes:
+      - ./src:/app/src:ro
+      - ./config/config.yaml:/app/config.yaml:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - ./data:/data
+      - mcr-python-packages:/opt/python-packages
+
+    environment:
+      PYTHONPATH: /app/src:/opt/python-packages
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install \
+          --disable-pip-version-check \
+          --no-cache-dir \
+          --target /opt/python-packages \
+          -r /app/requirements.txt
+        exec python -m mcr.main --config /app/config.yaml
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+
+volumes:
+  mcr-python-packages:
+
